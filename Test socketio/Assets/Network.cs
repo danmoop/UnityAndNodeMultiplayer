@@ -7,32 +7,42 @@ public class Network : MonoBehaviour {
 
 	static SocketIOComponent socket;
 	public GameObject playerPrefab;
+	private Dictionary<string, GameObject> players;
 
 	void Start(){
 		socket = GetComponent<SocketIOComponent>();
 		socket.On("open", onConnected);
-		socket.On("spawn", onSpawn);
+		socket.On("spawn", onSpawned);
 		socket.On("setPos", onSetPos);
-	}
+		socket.On("close", onDisconnect);
 
+		players = new Dictionary<string, GameObject>();
+	}
 
 	void onConnected(SocketIOEvent e){
 		Debug.Log("Connected");
 	}
 
-	void onSpawn(SocketIOEvent e){
+	void onDisconnect(SocketIOEvent e){
+		Debug.Log(e);
+	}
+
+	void onSpawned(SocketIOEvent e){
 		playerPrefab = (GameObject) Instantiate(playerPrefab,
 			new Vector3(e.data["x"].n,
 				e.data["y"].n,0),Quaternion.Euler(0,0,0));
+		AddPlayer(e.data["id"].str, playerPrefab);
+		Debug.Log(e.data["id"].str);
 	}
 
 	void onSetPos(SocketIOEvent e){
-		playerPrefab.transform.position =
+		players[e.data["id"].str].transform.position =
 		new Vector3(e.data["x"].n,
 			e.data["y"].n,0);
 	}
 
-	void onDisconnect(SocketIOEvent e){
+	public void AddPlayer(string id, GameObject player){
+		players.Add(id, player);
 	}
 
 	void Update(){
@@ -54,7 +64,7 @@ public class Network : MonoBehaviour {
 		}
 
 		if(Input.GetKeyDown(KeyCode.C)){
-			socket.Emit("showDebug");
+			Debug.Log(players);
 		}
 
 		if(Input.GetKeyDown(KeyCode.E)){
